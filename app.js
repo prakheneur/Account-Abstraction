@@ -1,43 +1,113 @@
-const { Contract, Wallet } = require("ethers");
-const {
-  ZeroDevEthersProvider,
-  convertEthersSignerToAccountSigner,
-} = require("@zerodev/sdk");
-const { PrivateKeySigner } = require("@alchemy/aa-core");
 
-// Make sure to set the environment variables
-const projectId = "523a76ee-00e1-41c6-8606-c1367ce20c9b";
-const owner = new Wallet(
-  "0xcfaae7c6a398a857778983b8ce08d7f2df91f3dd4854a88f13dd3d26c96b2f12"
-);
+const { ECDSAProvider } = require('@zerodev/sdk')
+const { LocalAccountSigner } = require("@alchemy/aa-core")
+const { encodeFunctionData, parseAbi, createPublicClient, http } = require('viem')
+const { polygonMumbai } = require('viem/chains')
+const PRIVATE_KEY="Generate your private key and use";
+const PROJECT_ID="create a project id at zerodev dashboard";
+if (!PRIVATE_KEY || !PROJECT_ID) {
+  console.log('Please set private key and project ID as environment variables')
+  process.exit(1)
+}
 
-const contractAddress = "0x34bE7f35132E97915633BC1fc020364EA5134863";
-const contractABI = [
-  "function mint(address _to) public",
-  "function balanceOf(address owner) external view returns (uint256 balance)",
-];
+// ZeroDev Project ID
+const projectId = PROJECT_ID
+
+// The "owner" of the AA wallet, which in this case is a private key
+const owner = LocalAccountSigner.privateKeyToAccountSigner(PRIVATE_KEY)
+
+//the contract deployed
+const contractAddress = 'ADDress where the solidity contract is saved'
+const contractABI = parseAbi([
+  // 'function claimTokens(uint amount) external',
+  // 'function unfollow() external',
+  // 'function getBalance(address user) public view returns (uint)',
+  // 'function follow() external'
+  "import fucnctions to access then"
+])
+
+
+const publicClient = createPublicClient({
+  chain: polygonMumbai,
+  transport: http('https://polygon-mumbai.infura.io/v3/f36f7f706a58477884ce6fe89165666c'),
+})
+
+
 
 const main = async () => {
-  // Use the function `ZeroDevEthersProvider` to create an Ethers provider
-  const provider = await ZeroDevEthersProvider.init("ECDSA", {
-    projectId,
-    // Convert an Ethers signer so it's compatible with our SDK
-    owner: convertEthersSignerToAccountSigner(owner),
-  });
+    // Create the AA wallet
+    const ecdsaProvider = await ECDSAProvider.init({
+      projectId,
+      owner,
+      opts: {
+        paymasterConfig: {
+          policy: "TOKEN_PAYMASTER",
+          gasToken: "USDC",
+        }}
+    })
+    const address = await ecdsaProvider.getAddress()
+    console.log('My address:', address)
+ //.............................................................................................................................. 
+    //follow the client
+    // const followResult = await ecdsaProvider.sendUserOperation({
+    //   target: contractAddress,
+    //   data: encodeFunctionData({
+    //     abi: contractABI,
+    //     functionName: 'follow',
+    //     args: [],
+    //   }),
+    // })
+    // await ecdsaProvider.waitForUserOperationTransaction(followResult.hash)
+    // console.log("Followed the account")
+//.............................................................................................................................. 
+    
+    // Claim the tokens
+    // const claimResult = await ecdsaProvider.sendUserOperation({
+    //   target: contractAddress,
+    //   data: encodeFunctionData({
+    //     abi: contractABI,
+    //     functionName: 'claimTokens',
+    //     args: [500,],
+    //   }),
+    // })
+    // await ecdsaProvider.waitForUserOperationTransaction(claimResult.hash)
+    // console.log("Token claimed")
+//.............................................................................................................................. 
 
-  // Get the signer from the Ethers provider
-  const signer = provider.getAccountSigner();
-  //console.log(signer);
-  const address = await signer.getAddress();
-  console.log(`My address: ${address}`);
+    // const balancebeforeUnfollow = await publicClient.readContract({
+    //     address: contractAddress,
+    //     abi: contractABI,
+    //     functionName: 'getBalance',
+    //     args: [address],
+    //   })
+    //   console.log("Balance before unfollowing:", balancebeforeUnfollow)
 
-  const nftContract = new Contract(contractAddress, contractABI, signer);
+//.............................................................................................................................. 
+    
+    // Unfollow the contract
+    // const unfollowResult = await ecdsaProvider.sendUserOperation({
+    //   target: contractAddress,
+    //   data: encodeFunctionData({
+    //     abi: contractABI,
+    //     functionName: 'unfollow',
+    //     args: [],
+    //   }),
+    // })
+    // await ecdsaProvider.waitForUserOperationTransaction(unfollowResult.hash)
+    // console.log("Unfollowed")
 
-  const receipt = await nftContract.mint(address);
-  //await receipt.wait();
-  console.log(`NFT balance: ${await nftContract.balanceOf(address)}`);
-};
+//.............................................................................................................................. 
 
-main().then(() => process.exit(0));
+  // Check balance after unfollowing
+  //   const balanceAfterUnfollow = await publicClient.readContract({
+  //     address: contractAddress,
+  //     abi: contractABI,
+  //     functionName: 'getBalance',
+  //     args: [address],
+  //   })
+  //   console.log("Balance after unfollowing:", balanceAfterUnfollow)
+//.............................................................................................................................. 
+  }
 
-
+  
+  main().then(() => process.exit(0))
